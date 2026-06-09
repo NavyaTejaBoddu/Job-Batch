@@ -32,7 +32,7 @@ standalone scripts with their own pass/fail assertions (run them directly).
 ## Architecture
 
 Pipeline (in `run.py`):
-`fetch_all → normalize → store/dedupe → US+relevance prefilter → Claude classify (new only) → Claude rank (relevant only) → deliver`
+`fetch_all → normalize → store/dedupe → US+relevance prefilter → score new jobs → deliver`
 
 Every source normalizes to one `Job` pydantic model (`models.py`), so everything
 downstream is source-agnostic. The whole design hinges on a few non-obvious rules:
@@ -44,15 +44,19 @@ downstream is source-agnostic. The whole design hinges on a few non-obvious rule
   nothing and bills nothing. `store.add_new()` returns only the rows it actually
   inserted (`INSERT OR IGNORE` + `rowcount`).
 
-- **Two-stage Claude gate.** Haiku (`classify.py`, `CLASSIFY_MODEL`) runs on all
-  new prefiltered jobs; only those it marks `relevant AND us_based` go to Sonnet
-  (`rank.py`, `RANK_MODEL`). Both use structured outputs (`client.messages.parse`
-  with a pydantic model) so JSON is schema-validated. `classify.py` auto-switches
-  to the Message Batches API when new-job count ≥ `BATCH_THRESHOLD` (40).
-
-- **Claude is gated on `ANTHROPIC_API_KEY`.** With no key, `run.py` skips
-  classify/rank cleanly (logs and continues) — fetch/filter/store still run and
-  `deliver` regenerates the digest from whatever is already ranked in the DB.
+- **Scoring has two backends, auto-selected by `ANTHROPIC_API_KEY` in `run.py`.**
+  Both produce `Classification` + `Ranking` objects and persist via the same
+  `store.record_classification` / `record_rank`, so everything downstream is
+  identical regardless of which ran.
+  - **Key set → Claude.** Haiku (`classify.py`, `CLASSIFY_MODEL`) runs on all new
+    prefiltered jobs; only those it marks `relevant AND us_based` go to Sonnet
+    (`rank.py`, `RANK_MODEL`). Both use structured outputs
+    (`client.messages.parse` with a pydantic model) so JSON is schema-validated.
+    `classify.py` auto-switches to the Message Batches API when new-job count ≥
+    `BATCH_THRESHOLD` (40).
+  - **No key → `heuristic.py`.** Free, offline keyword-overlap scorer against the
+    profile skills. `heuristic.score_new()` does both classify + rank in one pass.
+    This is the default — the app is fully usable with no API key or cost.
 
 ### Per-area gotchas
 

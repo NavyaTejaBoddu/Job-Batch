@@ -12,8 +12,21 @@ No paid services, no scraping. Only public/free APIs.
 
 ```
 fetch_all → normalize → store/dedupe (SQLite) → US + relevance prefilter →
-Claude classify (new only, Haiku) → Claude rank (relevant only, Sonnet) → deliver digest
+score new jobs → deliver digest
 ```
+
+**Scoring has two interchangeable backends, auto-selected at runtime:**
+
+- **Claude** (when `ANTHROPIC_API_KEY` is set) — Haiku classifies, Sonnet ranks
+  0–100 against your profile with reasons + gaps. Smartest results; costs cents.
+- **Local heuristic** (when no key is set, the default) — scores each job by
+  keyword overlap with your profile skills, with bonuses for senior/staff titles
+  and core DevOps/SRE roles. **No API, no network, no cost.** Produces the same
+  ranked digest shape, just with rule-based scores instead of LLM judgment.
+
+Both write identical data to the store, so the digest/CSV/email work the same
+either way. Set the key to switch to Claude; unset it to use the heuristic — no
+code changes.
 
 - **Idempotent.** A job is "new" only if its dedupe key (`source:external_id`)
   isn't already in `jobs.db`. Running twice the same day adds no duplicates and
@@ -41,6 +54,7 @@ job-fetcher/
   store.py         SQLite: is_new(), add_new(), record classification/rank
   classify.py      Haiku classifier (structured outputs; Batches API for large sets)
   rank.py          Sonnet ranker (scores against PROFILE)
+  heuristic.py     free local scorer used when no ANTHROPIC_API_KEY is set
   deliver.py       Markdown digest + matches.csv + optional SMTP email
   config.py        company lists, keywords, profile, env-based keys
   run.py           orchestrates the full daily pipeline
@@ -72,7 +86,7 @@ All secrets come from the environment — nothing is hardcoded.
 
 | Variable | Required? | Purpose |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | For ranking | Claude classify + rank. Without it the run still fetches/filters/stores, but the digest is empty. The SDK reads this automatically. |
+| `ANTHROPIC_API_KEY` | Optional | Switches scoring to Claude (Haiku classify + Sonnet rank). **Without it, the free local heuristic scores the jobs instead** — you still get a ranked digest, just rule-based. The SDK reads this automatically. |
 | `ADZUNA_APP_ID`, `ADZUNA_APP_KEY` | Optional | Enables the Adzuna source. |
 | `USAJOBS_EMAIL`, `USAJOBS_API_KEY` | Optional | Enables the USAJobs source (US federal roles). |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `DIGEST_TO` | Optional | Email the digest. If any is missing, the digest is just written to disk. `SMTP_PORT` defaults to 587. |

@@ -98,14 +98,14 @@ def main() -> None:
         print("    (none — every kept job was already in the DB)")
 
     # ----------------------------------------------------------------
-    # Claude classify (Haiku) -> rank (Sonnet). Only NEW jobs, and only
-    # if a key is configured (otherwise skip cleanly, like Adzuna/USAJobs).
+    # Score NEW jobs: Claude (Haiku classify -> Sonnet rank) when a key is
+    # set, otherwise the free local heuristic. Either way, results land in
+    # the store and feed the digest.
     # ----------------------------------------------------------------
-    if not os.getenv("ANTHROPIC_API_KEY"):
-        log.info("ANTHROPIC_API_KEY unset — skipping Claude classify/rank")
-    elif not new_jobs:
-        log.info("No new jobs — skipping Claude (no re-billing)")
-    else:
+    use_claude = bool(os.getenv("ANTHROPIC_API_KEY"))
+    if not new_jobs:
+        log.info("No new jobs — skipping scoring (no re-billing)")
+    elif use_claude:
         import classify
         import rank
 
@@ -114,6 +114,20 @@ def main() -> None:
 
         print("\n" + "=" * 78)
         print("CLAUDE RESULTS")
+        print("=" * 78)
+        n_relevant = sum(1 for c in classifications.values()
+                         if c.relevant and c.us_based)
+        print(f"  classified : {len(classifications)}")
+        print(f"  relevant+US: {n_relevant}")
+        print(f"  ranked     : {len(rankings)}")
+    else:
+        import heuristic
+
+        log.info("ANTHROPIC_API_KEY unset — using local heuristic scoring")
+        classifications, rankings = heuristic.score_new(store, new_jobs)
+
+        print("\n" + "=" * 78)
+        print("HEURISTIC RESULTS (local, no API)")
         print("=" * 78)
         n_relevant = sum(1 for c in classifications.values()
                          if c.relevant and c.us_based)
