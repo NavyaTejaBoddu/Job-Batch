@@ -1,0 +1,11 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Local logs
+*.log
+
+# Note: jobs.db, matches.csv, and digests/ are intentionally NOT ignored.
+# In GitHub Actions they are committed back so dedupe state persists across
+# daily runs. If you only run locally, you may add them here instead.

@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(python --version)",
+      "PowerShell(python -c \"import httpx, pydantic; print\\('httpx', httpx.__version__, 'pydantic', pydantic.VERSION\\)\" 2>&1)",
+      "PowerShell($root = \"C:\\\\Users\\\\navya teja\\\\Desktop\\\\job search copilot\\\\job-fetcher\"; New-Item -ItemType Directory -Force -Path $root | Out-Null; New-Item -ItemType Directory -Force -Path \"$root\\\\.github\\\\workflows\" | Out-Null; Write-Output \"created\"; python -m venv \"$root\\\\.venv\"; Write-Output \"venv created\"; & \"$root\\\\.venv\\\\Scripts\\\\python.exe\" -m pip install --quiet --upgrade pip httpx pydantic anthropic; Write-Output \"deps installed\"; & \"$root\\\\.venv\\\\Scripts\\\\python.exe\" -c \"import httpx, pydantic, anthropic; print\\('httpx', httpx.__version__, 'pydantic', pydantic.VERSION, 'anthropic', anthropic.__version__\\)\")",
+      "Bash(.venv/Scripts/python.exe -)",
+      "Skill(claude-api)",
+      "Skill(claude-api:*)"
+    ]
+  }
+}
