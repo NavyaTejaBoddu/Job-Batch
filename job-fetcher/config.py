@@ -42,6 +42,11 @@ RELEVANCE_KEYWORDS = [
     "infrastructure", "cloud engineer", "kubernetes", "ci/cd", "terraform",
 ]
 
+# US filter strictness. True  = keep ONLY jobs with an explicit US signal
+# (US state, "USA"/"US", "Remote - US", "North America"); drops worldwide/
+# anywhere/global and bare "Remote". False = lenient (keep remote/worldwide).
+US_STRICT = True
+
 # --------------------------------------------------------------------------
 # HTTP politeness
 # --------------------------------------------------------------------------

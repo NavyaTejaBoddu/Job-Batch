@@ -103,14 +103,22 @@ def _has_non_us(loc_low: str) -> bool:
 
 
 def passes_us(job: Job) -> bool:
-    """True if the job's location looks US-based or US-inclusive remote."""
+    """True if the job's location looks US-based or US-inclusive remote.
+
+    With config.US_STRICT (default), only an explicit US signal passes —
+    worldwide/anywhere/global and bare "Remote" are dropped. Otherwise the
+    lenient rules keep remote/worldwide roles.
+    """
+    strict = getattr(config, "US_STRICT", False)
     loc = (job.location or "").strip()
     if not loc:
-        # No location at all: keep only if it's explicitly remote.
-        return job.remote is True
+        # No location at all: keep only if explicitly remote (and not strict).
+        return (job.remote is True) and not strict
 
     if _has_us_signal(loc):
         return True
+    if strict:
+        return False                # US-only: require an explicit US signal
 
     low = loc.lower()
     non_us = _has_non_us(low)
