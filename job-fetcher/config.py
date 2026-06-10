@@ -74,6 +74,16 @@ _HERE = _osp.dirname(_osp.abspath(__file__))
 DB_PATH = _osp.join(_HERE, "jobs.db")
 DIGEST_DIR = _osp.join(_HERE, "digests")
 MATCHES_CSV = _osp.join(_HERE, "matches.csv")
+BOARD_DB = _osp.join(_HERE, "board.db")   # pipeline-board web app storage
+
+# Short candidate facts used by the web app's recruiter-message generator.
+CANDIDATE_NAME = "Navya Teja Boddu"
+CANDIDATE_EMAIL = "boddunavyateja@gmail.com"
+CANDIDATE_HEADLINE = (
+    "DevOps Engineer with 6 years building CI/CD pipelines, Kubernetes "
+    "clusters, and cloud infrastructure on AWS and Azure for HIPAA/PCI-DSS "
+    "regulated enterprises"
+)
 
 # Secondary recency window: optionally ignore postings older than this many
 # days by their source timestamp (the DB is still the source of truth for

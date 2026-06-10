@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Application Pipeline</title>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<style>
+  :root{
+    --bg:#f4f6f8; --panel:#ffffff; --ink:#1f2430; --muted:#737b8c;
+    --line:#e6e9ef; --accent:#4f46e5; --accent-ink:#fff; --radius:14px;
+    --shadow:0 1px 2px rgba(16,24,40,.06),0 6px 16px rgba(16,24,40,.06);
+    --wishlist:#64748b; --applied:#3b82f6; --interviewing:#f59e0b;
+    --offer:#10b981; --rejected:#ef4444;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+       background:var(--bg);color:var(--ink)}
+  header{position:sticky;top:0;z-index:5;background:rgba(244,246,248,.85);
+         backdrop-filter:blur(8px);border-bottom:1px solid var(--line);
+         padding:16px 24px;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+  header h1{font-size:18px;margin:0;font-weight:700;letter-spacing:-.01em}
+  header h1 span{color:var(--accent)}
+  .add{display:flex;gap:8px;flex:1;min-width:280px;max-width:680px}
+  .add input{flex:1;padding:10px 14px;border:1px solid var(--line);border-radius:10px;
+             background:#fff;font-size:14px;outline:none}
+  .add input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(79,70,229,.12)}
+  .btn{border:0;border-radius:10px;padding:10px 16px;font-weight:600;font-size:14px;
+       cursor:pointer;background:var(--accent);color:var(--accent-ink);transition:filter .15s}
+  .btn:hover{filter:brightness(1.07)} .btn:active{transform:translateY(1px)}
+  .btn.ghost{background:#eef0f4;color:var(--ink)}
+  .btn.danger{background:#fdecec;color:#b42318}
+  .board{display:flex;gap:16px;padding:20px 24px;align-items:flex-start;overflow-x:auto;min-height:80vh}
+  .col{flex:1;min-width:260px;background:var(--panel);border:1px solid var(--line);
+       border-radius:var(--radius);box-shadow:var(--shadow);display:flex;flex-direction:column;max-height:84vh}
+  .col-head{display:flex;align-items:center;gap:8px;padding:14px 16px;border-bottom:1px solid var(--line)}
+  .dot{width:9px;height:9px;border-radius:50%}
+  .col-title{font-weight:700;text-transform:capitalize;font-size:14px}
+  .count{margin-left:auto;background:#eef0f4;color:var(--muted);border-radius:20px;
+         padding:1px 9px;font-size:12px;font-weight:600}
+  .cards{padding:12px;display:flex;flex-direction:column;gap:10px;overflow-y:auto;flex:1;min-height:60px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 13px;
+        box-shadow:var(--shadow);cursor:pointer;transition:box-shadow .15s,transform .05s}
+  .card:hover{box-shadow:0 2px 4px rgba(16,24,40,.08),0 10px 24px rgba(16,24,40,.10)}
+  .card .t{font-weight:600;font-size:14px;margin-bottom:4px}
+  .card .m{color:var(--muted);font-size:12.5px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+  .card .m .sep{opacity:.5}
+  .sortable-ghost{opacity:.4} .sortable-chosen{transform:scale(1.01)}
+  .empty{color:var(--muted);font-size:13px;text-align:center;padding:18px 8px;border:1px dashed var(--line);border-radius:10px}
+  /* modal */
+  .scrim{position:fixed;inset:0;background:rgba(16,24,40,.45);display:none;
+         align-items:center;justify-content:center;z-index:20;padding:20px}
+  .scrim.open{display:flex}
+  .modal{background:#fff;border-radius:16px;box-shadow:0 24px 60px rgba(16,24,40,.3);
+         width:min(620px,100%);max-height:88vh;overflow:auto}
+  .modal .mh{padding:18px 20px;border-bottom:1px solid var(--line);display:flex;gap:10px;align-items:flex-start}
+  .modal .mh .x{margin-left:auto;border:0;background:#eef0f4;border-radius:8px;width:30px;height:30px;cursor:pointer;font-size:16px}
+  .mb{padding:18px 20px;display:flex;flex-direction:column;gap:14px}
+  .field label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.03em}
+  .field input,.field textarea{width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:9px;font:inherit;outline:none}
+  .field input:focus,.field textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(79,70,229,.12)}
+  .row{display:flex;gap:12px} .row>*{flex:1}
+  .desc{font-size:13px;color:#4b5161;white-space:pre-wrap;max-height:160px;overflow:auto;
+        background:#fafbfc;border:1px solid var(--line);border-radius:9px;padding:10px 12px}
+  .kit{display:none}
+  .kit.show{display:block}
+  .kit textarea{min-height:200px;font:13px/1.55 ui-monospace,Menlo,Consolas,monospace}
+  .actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .actions .spacer{flex:1}
+  a.link{color:var(--accent);text-decoration:none;font-size:13px}
+  a.link:hover{text-decoration:underline}
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1f2430;color:#fff;
+         padding:10px 16px;border-radius:10px;font-size:13px;opacity:0;transition:opacity .2s;z-index:30}
+  .toast.show{opacity:1}
+</style>
+</head>
+<body>
+<header>
+  <h1>Application&nbsp;<span>Pipeline</span></h1>
+  <form class="add" id="addForm">
+    <input id="addInput" placeholder="Paste a job URL or type a role/notes, then press Enter…" autocomplete="off">
+    <button class="btn" type="submit">Add</button>
+  </form>
+</header>
+
+<main class="board" id="board">
+  {% for s in statuses %}
+  <section class="col">
+    <div class="col-head">
+      <span class="dot" style="background:var(--{{ s }})"></span>
+      <span class="col-title">{{ s }}</span>
+      <span class="count" data-count="{{ s }}">0</span>
+    </div>
+    <div class="cards" data-status="{{ s }}"></div>
+  </section>
+  {% endfor %}
+</main>
+
+<div class="scrim" id="scrim">
+  <div class="modal" id="modal"></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const api = {
+  list:    () => fetch('/api/cards').then(r=>r.json()),
+  add:     (input) => fetch('/api/cards',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({input})}).then(r=>r.json()),
+  update:  (id,patch) => fetch('/api/cards/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(patch)}).then(r=>r.json()),
+  remove:  (id) => fetch('/api/cards/'+id,{method:'DELETE'}),
+  kit:     (id) => fetch('/api/cards/'+id+'/kit',{method:'POST'}).then(r=>r.json()),
+};
+let CARDS = [];
+const esc = (s)=> (s||'').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const toast = (msg)=>{const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1600);};
+
+function cardEl(c){
+  const el=document.createElement('div');
+  el.className='card'; el.dataset.id=c.id;
+  const meta=[c.company, c.location].filter(Boolean).map(esc).join(' <span class="sep">·</span> ');
+  el.innerHTML=`<div class="t">${esc(c.title)}</div>`+(meta?`<div class="m">${meta}</div>`:'');
+  el.addEventListener('click',()=>openModal(c.id));
+  return el;
+}
+
+function render(){
+  document.querySelectorAll('.cards').forEach(z=>z.innerHTML='');
+  const counts={};
+  CARDS.forEach(c=>{
+    const zone=document.querySelector('.cards[data-status="'+c.status+'"]');
+    if(zone){ zone.appendChild(cardEl(c)); counts[c.status]=(counts[c.status]||0)+1; }
+  });
+  document.querySelectorAll('[data-count]').forEach(b=>{
+    const s=b.dataset.count; b.textContent=counts[s]||0;
+    const zone=document.querySelector('.cards[data-status="'+s+'"]');
+    if(!counts[s]){ zone.innerHTML='<div class="empty">No cards</div>'; }
+  });
+}
+
+async function load(){ CARDS = await api.list(); render(); }
+
+document.getElementById('addForm').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const inp=document.getElementById('addInput'); const v=inp.value.trim();
+  if(!v) return;
+  inp.value=''; toast('Adding…');
+  const card=await api.add(v);
+  CARDS.unshift(card); render(); toast('Added to Wishlist');
+});
+
+// Drag and drop between columns
+document.querySelectorAll('.cards').forEach(zone=>{
+  new Sortable(zone,{group:'board',animation:150,ghostClass:'sortable-ghost',chosenClass:'sortable-chosen',
+    onEnd: async (evt)=>{
+      const id=+evt.item.dataset.id;
+      const newStatus=evt.to.dataset.status;
+      const card=CARDS.find(c=>c.id===id);
+      if(card && card.status!==newStatus){
+        card.status=newStatus;
+        await api.update(id,{status:newStatus});
+        render(); toast('Moved to '+newStatus);
+      }
+    }
+  });
+});
+
+// Modal
+const scrim=document.getElementById('scrim'), modal=document.getElementById('modal');
+scrim.addEventListener('click',(e)=>{ if(e.target===scrim) closeModal(); });
+function closeModal(){ scrim.classList.remove('open'); modal.innerHTML=''; }
+
+function openModal(id){
+  const c=CARDS.find(x=>x.id===id); if(!c) return;
+  modal.innerHTML=`
+    <div class="mh">
+      <span class="dot" style="margin-top:6px;background:var(--${c.status})"></span>
+      <div style="flex:1">
+        <div style="font-weight:700;font-size:16px">${esc(c.title)}</div>
+        <div style="color:var(--muted);font-size:13px;text-transform:capitalize">${c.status}</div>
+      </div>
+      <button class="x" id="mClose">×</button>
+    </div>
+    <div class="mb">
+      <div class="row">
+        <div class="field"><label>Title</label><input id="fTitle" value="${esc(c.title)}"></div>
+        <div class="field"><label>Company</label><input id="fCompany" value="${esc(c.company)}"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Location</label><input id="fLocation" value="${esc(c.location)}"></div>
+        <div class="field"><label>Move to</label>
+          <select id="fStatus" style="width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:9px;font:inherit">
+            ${['wishlist','applied','interviewing','offer','rejected'].map(s=>`<option value="${s}" ${s===c.status?'selected':''}>${s}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      ${c.url?`<a class="link" href="${esc(c.url)}" target="_blank" rel="noopener">Open original posting ↗</a>`:''}
+      ${c.description?`<div class="field"><label>Description</label><div class="desc">${esc(c.description)}</div></div>`:''}
+      <div class="actions">
+        <button class="btn" id="genKit">⚡ Generate Kit</button>
+        <button class="btn ghost" id="saveCard">Save</button>
+        <span class="spacer"></span>
+        <button class="btn danger" id="delCard">Delete</button>
+      </div>
+      <div class="kit field" id="kitBox">
+        <label>Recruiter outreach message</label>
+        <textarea id="kitText" readonly></textarea>
+        <div class="actions" style="margin-top:8px"><button class="btn ghost" id="copyKit">Copy to clipboard</button></div>
+      </div>
+    </div>`;
+  scrim.classList.add('open');
+  document.getElementById('mClose').onclick=closeModal;
+
+  if(c.kit){ document.getElementById('kitBox').classList.add('show'); document.getElementById('kitText').value=c.kit; }
+
+  document.getElementById('genKit').onclick=async()=>{
+    const r=await api.kit(id); c.kit=r.kit;
+    const box=document.getElementById('kitBox'); box.classList.add('show');
+    document.getElementById('kitText').value=r.kit; toast('Kit generated');
+  };
+  document.getElementById('copyKit').onclick=()=>{
+    navigator.clipboard.writeText(document.getElementById('kitText').value); toast('Copied');
+  };
+  document.getElementById('saveCard').onclick=async()=>{
+    const patch={title:fTitle.value,company:fCompany.value,location:fLocation.value,status:fStatus.value};
+    const upd=await api.update(id,patch); Object.assign(c,upd);
+    render(); closeModal(); toast('Saved');
+  };
+  document.getElementById('delCard').onclick=async()=>{
+    if(!confirm('Delete this card?')) return;
+    await api.remove(id); CARDS=CARDS.filter(x=>x.id!==id); render(); closeModal(); toast('Deleted');
+  };
+}
+
+load();
+</script>
+</body>
+</html>

@@ -6,6 +6,9 @@ __pycache__/
 # Local logs
 *.log
 
+# Pipeline-board web app: personal, local-only tracking data — don't commit.
+board.db
+
 # Note: jobs.db, matches.csv, and digests/ are intentionally NOT ignored.
 # In GitHub Actions they are committed back so dedupe state persists across
 # daily runs. If you only run locally, you may add them here instead.
